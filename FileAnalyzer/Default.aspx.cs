@@ -21,7 +21,7 @@ namespace FileAnalyzer
             List<FileDetails> files = GetFiles(directoryPath);
             List<FileDetails> previousFiles = GetPreviousFiles();
 
-            List<FileDetails> newFiles = files.Except(previousFiles).ToList();
+            List<FileDetails> newFiles = files.Where(f => !previousFiles.Any(pf => pf.Path == f.Path && pf.Hash == f.Hash)).ToList();
             List<FileDetails> deletedFiles = previousFiles.Except(files).ToList();
             List<FileDetails> modifiedFiles = new List<FileDetails>();
 

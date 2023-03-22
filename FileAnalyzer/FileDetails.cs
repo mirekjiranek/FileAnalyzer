@@ -5,6 +5,7 @@ using System.Web;
 
 namespace FileAnalyzer
 {
+    [Serializable]
     public class FileDetails
     {
         public string Path { get; set; }
