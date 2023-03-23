@@ -4,7 +4,7 @@ FileAnalyzer je webová aplikace vytvořená v ASP.NET Web Forms. Aplikace analy
 
 ## Funkce programu:
 
-* Načtení seznamu souborů v zadaném adresáři. V případě, že cesta k adresáři není validní, program informuje uživatele.
+* Načtení seznamu souborů v zadaném adresáři. V případě, že cesta k adresáři není validní, program o tom informuje uživatele.
 * Rekurzivní zpracování všech podadresářů
 * Porovnání seznamu souborů s přechozím stavem adresáře uloženým v souboru files.json, který se při inicializaci vytvoří a poté je pravidelně aktualizován
 * V případě modifikace souborů je číslo verze povýšeno o 1 a dále dojde ke změně hash hodnoty pro detekci změn v souboru.
