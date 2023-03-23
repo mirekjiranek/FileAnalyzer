@@ -121,7 +121,7 @@ namespace FileAnalyzer
             if (!ApplicationSettings.InitialValue && File.Exists(filePath))
             {
                 string fileJson = File.ReadAllText(filePath);
-                return JsonConvert.DeserializeObject<List<FileDetails>>(fileJson);
+                files = JsonConvert.DeserializeObject<List<FileDetails>>(fileJson);
             }
             else
             {
