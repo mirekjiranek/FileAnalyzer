@@ -1,6 +1,6 @@
 # FileAnalyzer
 
-FileAnalyzer je webová aplikace vytvořená v ASP.NET Web Forms. Aplikace analyzuje soubory ve zvoleném adresáři a sleduje změny mezi jednotlivými analýzami adresáře. Poté informuje uživatele o nově přidaných, upravených, nebo smazaných souborech.
+FileAnalyzer je webová aplikace vytvořená v ASP.NET Web Forms. Aplikace analyzuje soubory ve zvoleném adresáři a sleduje změny mezi jednotlivými analýzami adresáře. Poté informuje uživatele o nově přidaných, upravených, nebo smazaných souborech. Hlavní logika pro správu adresářů je napsaná ve výchozí stránce webové aplikace - **Default.aspx**
 
 ## Funkce programu:
 
