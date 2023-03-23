@@ -102,7 +102,7 @@ namespace FileAnalyzer
 
         private string GetFileHash(string filePath)
         {
-            using (var scope = MD5.Create())
+            using (var scope = SHA256.Create())
             {
                 using (var stream = File.OpenRead(filePath))
                 {
