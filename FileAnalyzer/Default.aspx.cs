@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -56,35 +57,39 @@ namespace FileAnalyzer
             foreach (string file in Directory.GetFiles(directoryPath)) 
             {
                 var previousFile = previousFiles.FirstOrDefault(x => x.Path == file);
+                FileDetails fileDetails;
+
+                //Create new FileDetail if previous file with this path doesn't exists
                 if (previousFile == null)
                 {
-                    var newFileDetails = new FileDetails()
+                    fileDetails = new FileDetails()
                     {
                         Path = file,
                         Hash = GetFileHash(file),
                         Version = 1
                     };
-
-                    files.Add(newFileDetails);
                 }
                 else
                 {
+                    //Create new FileDetail with updated hash if previous hash is different.
                     string newHash = GetFileHash(file);
                     if (previousFile.Hash != newHash)
                     {
-                        var previousFileDetails = new FileDetails()
+                        fileDetails = new FileDetails()
                         {
                             Path = previousFile.Path,
                             Hash = newHash,
                             Version = previousFile.Version,
                         };
-                        files.Add(previousFileDetails);
                     }
                     else
                     {
-                        files.Add(previousFile);
+                        //Previous FileDetail without any changes
+                        fileDetails = previousFile;
                     }
                 }
+
+                files.Add(fileDetails);
             }
 
             foreach (string directory in Directory.GetDirectories(directoryPath))
@@ -97,11 +102,11 @@ namespace FileAnalyzer
 
         private string GetFileHash(string filePath)
         {
-            using (var md5 = System.Security.Cryptography.MD5.Create())
+            using (var scope = MD5.Create())
             {
                 using (var stream = File.OpenRead(filePath))
                 {
-                    byte[] hash = md5.ComputeHash(stream);
+                    byte[] hash = scope.ComputeHash(stream);
                     return BitConverter.ToString(hash).Replace("-", "").ToLower();
                 }
             }
@@ -116,7 +121,7 @@ namespace FileAnalyzer
             if (!ApplicationSettings.InitialValue && File.Exists(filePath))
             {
                 string fileJson = File.ReadAllText(filePath);
-                files = JsonConvert.DeserializeObject<List<FileDetails>>(fileJson);
+                return JsonConvert.DeserializeObject<List<FileDetails>>(fileJson);
             }
             else
             {
@@ -155,16 +160,16 @@ namespace FileAnalyzer
 
             if (newFiles.Count > 0)
             {
-                result += "<b>Nové soubory:</b><br/>";
+                result += "<b>New files:</b><br/>";
                 foreach (var file in newFiles)
                 {
-                    result += $"[A] {file.Path} (verze {file.Version})<br/>";
+                    result += $"[A] {file.Path} (version {file.Version})<br/>";
                 }
             }
 
             if (deletedFiles.Count > 0)
             {
-                result += "<b>Odstraněné soubory a adresáře:</b><br/>";
+                result += "<b>Deleted files:</b><br/>";
                 foreach (var file in deletedFiles)
                 {
                     result += $"[D] {file.Path}<br/>";
@@ -173,16 +178,16 @@ namespace FileAnalyzer
 
             if (modifiedFiles.Count > 0)
             {
-                result += "<b>Změněné soubory:</b><br/>";
+                result += "<b>Modified files:</b><br/>";
                 foreach (var file in modifiedFiles)
                 {
-                    result += $"[M] {file.Path} (verze {file.Version})<br/>";
+                    result += $"[M] {file.Path} (version {file.Version})<br/>";
                 }
             }
 
             if (result == "")
             {
-                result = "Žádná změna.";
+                result = "No changes detected.";
             }
 
             return result;
