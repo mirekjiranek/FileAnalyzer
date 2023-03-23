@@ -12,7 +12,11 @@ FileAnalyzer je webová aplikace vytvořená v ASP.NET Web Forms. Aplikace analy
 
 ## Ukázka programu
 
-![Inicializace adresáře](.FileAnalyzer/FileAnalyzer/README/init.PNG)
+### Inicializace aresáře
+![Inicializace adresáře](./FileAnalyzer/README/init.PNG)
+
+### Analýza změn v adresáři
+![Analýza změn](./FileAnalyzer/README/runtime.PNG)
 
 ## Potenciální omezení aplikace:
 
