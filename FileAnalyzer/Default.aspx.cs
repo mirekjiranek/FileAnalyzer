@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,46 +19,77 @@ namespace FileAnalyzer
         protected void AnalyzeButton_Click(object sender, EventArgs e)
         {
             string directoryPath = DirectoryTextBox.Text.Trim();
-            List<FileDetails> files = GetFiles(directoryPath);
-            List<FileDetails> previousFiles = GetPreviousFiles();
-
-            List<FileDetails> newFiles = files.Where(f => !previousFiles.Any(pf => pf.Path == f.Path && pf.Hash == f.Hash)).ToList();
-            List<FileDetails> deletedFiles = previousFiles.Except(files).ToList();
-            List<FileDetails> modifiedFiles = new List<FileDetails>();
-
-            foreach (FileDetails file in previousFiles.Intersect(files))
+            if (Directory.Exists(directoryPath))
             {
-                if (file.Hash != GetFileHash(file.Path))
+                List<FileDetails> previousFiles = GetPreviousFiles();
+                List<FileDetails> files = GetFiles(directoryPath, previousFiles);
+                List<FileDetails> modifiedFiles = new List<FileDetails>();
+
+                foreach (var file in previousFiles)
                 {
-                    file.Version++;
-                    modifiedFiles.Add(file);
+                    var matchingFile = files.FirstOrDefault(f => f.Path == file.Path);
+                    if (matchingFile != null && file.Hash != matchingFile.Hash)
+                    {
+                        matchingFile.Version = file.Version + 1;
+                        modifiedFiles.Add(matchingFile);
+                    }
                 }
+
+                List<FileDetails> newFiles = files.Where(f => !previousFiles.Any(pf => pf.Path == f.Path)).ToList();
+                List<FileDetails> deletedFiles = previousFiles.Where(pf => !files.Any(f => f.Path == pf.Path)).ToList();
+
+
+                SaveFiles(files);
+
+                ResultLabel.Text = GenerateResultMessage(files, newFiles, deletedFiles, modifiedFiles);
             }
-
-            SaveFiles(files);
-
-            ResultLabel.Text = GenerateResultMessage(newFiles, deletedFiles, modifiedFiles);
+            else
+            {
+                ResultLabel.Text = "Directory path is not valid.";
+            }
         }
 
-        private List<FileDetails> GetFiles(string directoryPath)
+        private List<FileDetails> GetFiles(string directoryPath, List<FileDetails> previousFiles)
         {
             List<FileDetails> files = new List<FileDetails>();
 
-            foreach (string file in Directory.GetFiles(directoryPath))
+            foreach (string file in Directory.GetFiles(directoryPath)) 
             {
-                FileDetails fileDetails = new FileDetails()
+                var previousFile = previousFiles.FirstOrDefault(x => x.Path == file);
+                if (previousFile == null)
                 {
-                    Path = file,
-                    Hash = GetFileHash(file),
-                    Version = 1
-                };
+                    var newFileDetails = new FileDetails()
+                    {
+                        Path = file,
+                        Hash = GetFileHash(file),
+                        Version = 1
+                    };
 
-                files.Add(fileDetails);
+                    files.Add(newFileDetails);
+                }
+                else
+                {
+                    string newHash = GetFileHash(file);
+                    if (previousFile.Hash != newHash)
+                    {
+                        var previousFileDetails = new FileDetails()
+                        {
+                            Path = previousFile.Path,
+                            Hash = newHash,
+                            Version = previousFile.Version,
+                        };
+                        files.Add(previousFileDetails);
+                    }
+                    else
+                    {
+                        files.Add(previousFile);
+                    }
+                }
             }
 
             foreach (string directory in Directory.GetDirectories(directoryPath))
             {
-                files.AddRange(GetFiles(directory));
+                files.AddRange(GetFiles(directory, previousFiles));
             }
 
             return files;
@@ -79,9 +111,17 @@ namespace FileAnalyzer
         {
             List<FileDetails> files = new List<FileDetails>();
 
-            if (ViewState["Files"] != null)
+            string filePath = Server.MapPath("~/App_Data/files.json");
+
+            if (!ApplicationSettings.InitialValue && File.Exists(filePath))
             {
-                files = (List<FileDetails>)ViewState["Files"];
+                string fileJson = File.ReadAllText(filePath);
+                files = JsonConvert.DeserializeObject<List<FileDetails>>(fileJson);
+            }
+            else
+            {
+                string fileJson = JsonConvert.SerializeObject(files, Formatting.Indented);
+                File.WriteAllText(filePath, fileJson);
             }
 
             return files;
@@ -89,17 +129,34 @@ namespace FileAnalyzer
 
         private void SaveFiles(List<FileDetails> files)
         {
-            ViewState["Files"] = files;
+            string filePath = Server.MapPath("~/App_Data/files.json");
+            string fileJson = JsonConvert.SerializeObject(files, Formatting.Indented);
+            File.WriteAllText(filePath, fileJson);
         }
 
-        private string GenerateResultMessage(List<FileDetails> newFiles, List<FileDetails> deletedFiles, List<FileDetails> modifiedFiles)
+        private string GenerateResultMessage(List<FileDetails> currentFiles, List<FileDetails> newFiles, List<FileDetails> deletedFiles, List<FileDetails> modifiedFiles)
         {
             string result = "";
+            if (ApplicationSettings.InitialValue)
+            {
+                ApplicationSettings.InitialValue = false;
+                result += "<b>Direcory loaded, list of files:</b><br/>";
+                foreach (var file in currentFiles)
+                {
+                    result += $"{file.Path}<br/>";
+                }
+                return result;
+            }
+
+            if (currentFiles.Count == 0)
+            {
+                result += "Empty directory";
+            }
 
             if (newFiles.Count > 0)
             {
                 result += "<b>Nové soubory:</b><br/>";
-                foreach (FileDetails file in newFiles)
+                foreach (var file in newFiles)
                 {
                     result += $"[A] {file.Path} (verze {file.Version})<br/>";
                 }
@@ -108,7 +165,7 @@ namespace FileAnalyzer
             if (deletedFiles.Count > 0)
             {
                 result += "<b>Odstraněné soubory a adresáře:</b><br/>";
-                foreach (FileDetails file in deletedFiles)
+                foreach (var file in deletedFiles)
                 {
                     result += $"[D] {file.Path}<br/>";
                 }
@@ -117,7 +174,7 @@ namespace FileAnalyzer
             if (modifiedFiles.Count > 0)
             {
                 result += "<b>Změněné soubory:</b><br/>";
-                foreach (FileDetails file in modifiedFiles)
+                foreach (var file in modifiedFiles)
                 {
                     result += $"[M] {file.Path} (verze {file.Version})<br/>";
                 }
